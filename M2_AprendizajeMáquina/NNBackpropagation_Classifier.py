@@ -8,11 +8,19 @@ Inteligencia Artificial Avanzada I | Módulo 2
 from random import random
 from random import seed
 from math import exp
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+#matplotlib inline
+import plotly.express as px
+import plotly.graph_objects as go
+import seaborn as sns
+
 
 
 # Inicialización de la Red Neuronal
 """
-Función que permite que la creación de la Red Neuronal 
+Función inicializar_red():  permite la creación de la Red Neuronal 
 especificando el número de capas de entrada, capas ocultas 
 y capas de salida (parámetros).
 
@@ -30,7 +38,7 @@ def inicializar_red(nc_entrada, nc_oculta, nc_salida):
 
 
 """
-Función que permite calcular la activación de una neurona dada una entrada.
+Función activar(): permite calcular la activación de una neurona dada una entrada.
 La activación de neuronas se calcula como la suma ponderada de las entradas.
 """
 # Calcula la activación de una neurona para una entrada
@@ -42,7 +50,7 @@ def activar(pesos, entradas):
 
 
 """
-Función que permite transferir una función de activación usando la función sigmoide.
+Función transferir(): permite transferir una función de activación usando la función sigmoide.
 La función sigmoide o logística es capaz de tomar cualquier valor de entrada 
 y producir un número entre 0 y 1 en una curva S.
 """
@@ -52,7 +60,7 @@ def transferir(activacion):
 
 
 """
-Función que permite la propagación hacia adelante para una fila de datos.
+Función forward_propagate(): permite la propagación hacia adelante para una fila de datos.
 Devuelve las salidas de la última capa (capa de salida).
 """
 # Forward propagate de una entrada a una salida de la red
@@ -69,7 +77,7 @@ def forward_propagate(red, fila):
 
 
 """
-Función que permite calcular la pendiente del valor de salida de una neurona.
+Función transferir_derivada(): permite calcular la pendiente del valor de salida de una neurona.
 Utiliza la derivada de la función de transferencia sigmoide.
 """
 # Calcula la derivada de la salida de una neurona
@@ -78,7 +86,7 @@ def transferir_derivada(salida):
 
 
 """
-Función que implementa el algoritmo BackPropagation.
+Función backward_propagate_error(): implementa el algoritmo BackPropagation.
 
 El error (en la capa de salida) para una neurona dada se puede calcular de la 
 siguiente manera:
@@ -110,7 +118,7 @@ def backward_propagate_error(red, esperado):
 
 
 """
-Función que permite actualizar los pesos después de que se calculan los errores para cada 
+Función actualizacion_pesos(): permite actualizar los pesos después de que se calculan los errores para cada 
 neurona en la red gracias al algoritmo BackPropagation.
 
 Nota: La red se entrena utilizando descenso de gradiente estocástico, es decir, que se necesitan 
@@ -131,7 +139,7 @@ def actualizacion_pesos(red, fila, learning_rate):
 
 
 """
-Función que implementa el entrenamiento de una red neuronal inicializada.
+Función entrenamiento_red(): implementa el entrenamiento de una red neuronal inicializada.
 Parámetros: conjunto de datos de entrenamiento, tasa de aprendizaje, número de épocas
 y número esperado de valores de salida.
 
@@ -151,10 +159,11 @@ def entrenamiento_red(red, train_set, learning_rate, n_epocas, nc_salida):
 			backward_propagate_error(red, esperado)
 			actualizacion_pesos(red, fila, learning_rate)
 		print('->epoca=%d, learning_rate=%.3f, error=%.3f' % (epoca, learning_rate, suma_error))
+	return print('Learning rate:' + str(learning_rate) + ' | Error:' + str(suma_error))
 
 
 """
-Función que permite hacer predicciones con una red neuronal entrenada. 
+Función predecir(): permite hacer predicciones con una red neuronal entrenada. 
 
 Propagar hacia adelante un patrón de entrada para obtener una salida es todo lo que se requiere hacer 
 para que la red sea capaz de predecir.
@@ -164,35 +173,82 @@ def predecir(red, fila):
 	salidas = forward_propagate(red,fila)
 	return salidas.index(max(salidas))	# Función arg max.
 
-
-
+# ------------------------------------------------------------------------------------------------------------
 # Prueba del algoritmo BackPropagation para entrenamiento
-seed(1)
-dataset = [[2.7811,2.5505,0],
-	[1.4655,2.3621,0],
-	[3.3966,4.4003,0],
-	[1.3881,1.8502,0],
-	[3.0641,3.00530,0],
-	[7.6275,2.7593,1],
-	[5.3324,2.0886,1],
-	[6.9226,1.7711,1],
-	[8.6754,-0.2421,1],
-	[7.6738,3.5086,1]]
+# Carga de los datos
+"""
+Dataset: Breast Cancer Data Set
 
-nc_entrada = len(dataset[0]) - 1						# Número de entradas que recibe la capa de entrada
-nc_salida = len(set([fila[-1] for fila in dataset]))	# Número de neuronas en la capa de salida
+- Este es uno de los tres dominios proporcionados por el Instituto de Oncología que ha aparecido repetidamente 
+en la literatura de aprendizaje automático.
+- El conjunto de datos incluye 201 instancias de una clase y 85 instancias de otra clase. Las instancias se 
+describen mediante 9 atributos, algunos de los cuales son lineales y otros son nominales.
+"""
+dataset = pd.read_csv('breast_cancer.csv')
+
+
+"""
+Implementación de 5-fold Cross-Validation con el conjunto 
+de datos deseado. 
+Se utilizó Cross-Validation con el objetivo principal de hacer varias pruebas 
+variando el dataset, además de poder demostrar la efectividad y estabilidad del
+algoritmo.
+"""
+# 5-Fold Cross-Validation
+dataset = dataset.reindex(np.random.permutation(dataset.index))
+dataset = dataset.reset_index(drop=True)
+# folds
+fold1 = dataset.loc[:(dataset.shape[0]/5)*1]                                            
+fold2 = dataset.loc[(dataset.shape[0]/5)*1+1:(dataset.shape[0]/5)*2]
+fold3 = dataset.loc[(dataset.shape[0]/5)*2+1:(dataset.shape[0]/5)*3]
+fold4 = dataset.loc[(dataset.shape[0]/5)*3+1:(dataset.shape[0]/5)*4]
+fold5 = dataset.loc[(dataset.shape[0]/5)*4+1:(dataset.shape[0])]
+# train-validation
+dataset1 = pd.concat([fold1, fold2, fold3, fold4])
+dataset2 = pd.concat([fold1, fold2, fold3, fold5])
+dataset3 = pd.concat([fold1, fold2, fold4, fold5])
+dataset4 = pd.concat([fold1, fold3, fold4, fold5])
+dataset5 = pd.concat([fold2, fold3, fold4, fold5])
+
+
+"""
+Parámetros a utilizar por la NN e inicialización de la misma.
+"""
+nc_entrada = len(dataset.values[0]) - 1						# Número de entradas que recibe la capa de entrada
+nc_salida = len(set([fila[-1] for fila in dataset.values]))	# Número de neuronas en la capa de salida
 red = inicializar_red(nc_entrada, 2, nc_salida)
 
 print('-------------------------------------------------------------------------------------------------')
 print('TRAINING')
 print('-------------------------------------------------------------------------------------------------')
-entrenamiento_red(red, dataset, 0.5, 50, nc_salida)
+entrenamiento_red(red, dataset.values, 0.5, 50, nc_salida)
 
+# Análisis del error variando el learning rate para 50 epochs
+print('-------------------------------------------------------------------------------------------------')
+print('TUNING HYPERPARAMETERS')
+print('-------------------------------------------------------------------------------------------------')
+learning_rates = [0.005, 0.05, 0.5]
+for i in learning_rates:
+	entrenamiento_red(red, dataset.values, i, 50, nc_salida)
+	print('Finished tuning for learning_rate=' + str(i))
+	print('-------------------------------------------------------------------------------------------------')
+	print('-------------------------------------------------------------------------------------------------')
+
+
+print('\n-------------------------------------------------------------------------------------------------')
+print('VALIDATION')
+print('-------------------------------------------------------------------------------------------------')
+datasets = [dataset1, dataset2, dataset3, dataset4, dataset5]
+for i in datasets: 
+  entrenamiento_red(red, i.values, 0.05, 50, nc_salida)
+  print('Finished validation of NN for fold')
+  print('-------------------------------------------------------------------------------------------------')
+  print('-------------------------------------------------------------------------------------------------')
 
 # Prueba predicciones de la red neuronal
 print('\n-------------------------------------------------------------------------------------------------')
 print('PREDICTIONS')
 print('-------------------------------------------------------------------------------------------------')
-for fila in dataset:
-	prediccion = predecir(red, fila)
-	print('Esperado=%d, Obtenido=%d' % (fila[-1], prediccion))
+for fila in dataset.values:
+  prediccion = predecir(red, fila)
+print('Esperado=%d, Obtenido=%d' % (fila[-1], prediccion))
